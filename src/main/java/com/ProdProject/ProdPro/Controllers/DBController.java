@@ -12,11 +12,14 @@ import java.util.UUID;
 @RestController
 @RequestMapping("/produced")
 public class DBController {
+
     private DbService dbService;
+
     @Autowired
     public DBController(DbService dbService){
         this.dbService=dbService;
     }
+
     @GetMapping
     public List<Product> getAllProducts(){
         return dbService.getAllProducts();

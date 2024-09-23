@@ -5,6 +5,7 @@ import com.ProdProject.ProdPro.DTOs.GenericProductDTO;
 import com.ProdProject.ProdPro.Exceptions.NotFoundException;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.web.client.RestTemplateBuilder;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.ResponseEntity;
@@ -21,11 +22,13 @@ public class FakeStoreClients {
     private RestTemplateBuilder restTemplateBuilder;
     private String fakeStoreURL;
     private String fakeStoreProductsPathURL;
+    private RedisTemplate<String,Object> redisTemplate;
 
-    public FakeStoreClients(RestTemplateBuilder restTemplateBuilder, @Value("${fakeStore.api.url}")String fakeStoreApiURL, @Value("${fakeStore.api.paths.products}")String fakeStoreProductsURL){
+    public FakeStoreClients(RedisTemplate<String,Object> redisTemplate,RestTemplateBuilder restTemplateBuilder, @Value("${fakeStore.api.url}")String fakeStoreApiURL, @Value("${fakeStore.api.paths.products}")String fakeStoreProductsURL){
         this.restTemplateBuilder=restTemplateBuilder;
         this.fakeStoreURL=fakeStoreApiURL+fakeStoreProductsURL;
         this.fakeStoreProductsPathURL=fakeStoreApiURL+fakeStoreProductsURL+"/{id}";
+        this.redisTemplate=redisTemplate;
     }
     public List<GenericProductDTO> getAllProducts() {
         RestTemplate restTemplate=restTemplateBuilder.build();
@@ -37,17 +40,26 @@ public class FakeStoreClients {
         return gtos;
     }
     public GenericProductDTO getProductById(Long id) throws NotFoundException {
-        RestTemplate restTemplate=restTemplateBuilder.build();
-        ResponseEntity<FakeStoreProductDTO> response= restTemplate.getForEntity(fakeStoreProductsPathURL, FakeStoreProductDTO.class,id);
-        if(response.getBody()==null){
-            throw new NotFoundException("This id "+id+" is not found");
+        GenericProductDTO genericProductDTO=(GenericProductDTO) redisTemplate.opsForHash().get("PRODUCTS",id);
+        if(genericProductDTO!=null){
+            System.out.println("Mai hu na");
+            return genericProductDTO;
         }
-        GenericProductDTO product=new GenericProductDTO();
-        product.setImage(response.getBody().getImage());
-        product.setDescription(response.getBody().getDescription());
-        product.setTitle(response.getBody().getTitle());
-        product.setPrice(response.getBody().getPrice());
-        return product;
+        else{
+            RestTemplate restTemplate=restTemplateBuilder.build();
+            ResponseEntity<FakeStoreProductDTO> response= restTemplate.getForEntity(fakeStoreProductsPathURL, FakeStoreProductDTO.class,id);
+            if(response.getBody()==null){
+                throw new NotFoundException("This id "+id+" is not found");
+            }
+            GenericProductDTO product=new GenericProductDTO();
+            product.setImage(response.getBody().getImage());
+            product.setDescription(response.getBody().getDescription());
+            product.setTitle(response.getBody().getTitle());
+            product.setPrice(response.getBody().getPrice());
+            product.setId(response.getBody().getId());
+            if(product.getId()!=null) redisTemplate.opsForHash().put("PRODUCTS",product.getId(),product);
+            return product;
+        }
     }
     public GenericProductDTO createProduct(GenericProductDTO product){
         RestTemplate restTemplate=restTemplateBuilder.build();

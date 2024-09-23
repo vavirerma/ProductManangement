@@ -1,3 +1,4 @@
+
 package com.ProdProject.ProdPro.Modals;
 
 import jakarta.persistence.Entity;

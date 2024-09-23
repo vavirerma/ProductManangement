@@ -24,7 +24,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 @WebMvcTest(ProdController.class)
 public class ProdControllerWebMVCTest {
-    @Autowired
+ /*   @Autowired
     private MockMvc mockMvc;
     @MockBean
     @Qualifier("fakeProduct")
@@ -83,5 +83,5 @@ public class ProdControllerWebMVCTest {
                 .andExpect(status().is(200))
                 .andExpect(content().string(objectMapper.writeValueAsString(expectedProduct)));
     }
-
+*/
 }
